@@ -187,6 +187,9 @@ private:
   //! true if the weights must be computed as the inverse of the variance of prediction
   bool compute_weights_;
 
+  //! Variance of the low fidelity points
+  boost::shared_ptr< vector<double> > var_low_;
+  
   static int
   PredictVariance ( unsigned n_dim,
                     const double* uv,
