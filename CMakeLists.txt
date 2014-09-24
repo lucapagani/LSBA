@@ -12,15 +12,20 @@ endif("${CMAKE_BUILD_TYPE}" STREQUAL "")
 
 
 IF(CMAKE_BUILD_TYPE MATCHES "Release")
-  add_definitions("-std=c++11 -Wall -Wno-sign-compare -O3 -DEIGEN_NO_DEBUG -fopenmp")
+  add_definitions("-std=c++11 -Wall -Wno-sign-compare -O3 -DEIGEN_NO_DEBUG")
 ELSE(CMAKE_BUILD_TYPE MATCHES "Release")
   add_definitions("-std=c++11 -Wall -Wno-sign-compare -g -O0")
 ENDIF(CMAKE_BUILD_TYPE MATCHES "Release")
 
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
 
 find_package(Eigen REQUIRED)
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
-add_definitions(-DEIGEN_USE_NEW_STDVECTOR -DEIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET)
+# add_definitions(-DEIGEN_USE_NEW_STDVECTOR -DEIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET -DEIGEN_NO_DEBUG)
 
 include_directories(/usr/local/include/mba /usr/local/include/lsmg/include)
 

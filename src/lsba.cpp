@@ -112,7 +112,6 @@ LSBA::LSBA ( boost::shared_ptr<std::vector<double> > u,
 
   // Compute parameters
   ComputeParametersW ();
-//   FF_.finalize();
 
   if ( lambda_fac_ > 0. ) {
     ComputeLambda ();
@@ -165,7 +164,7 @@ void LSBA::GetDomain ( double& umin,
   vmax = domain_[3];
 }
 
-bool
+void
 LSBA::AddPointF ( int k,
                   double u,
                   double v
@@ -201,7 +200,7 @@ LSBA::AddPointF ( int k,
       F_.insertBack ( k, ( i + 1 ) * n2_ + j + 1 + ii * n2_ + jj ) = w_kl[ii][jj];
     }
 
-  return true;
+//   return true;
 }
 
 void
@@ -230,6 +229,9 @@ LSBA::Compute ( int MaxIteration,
   }
 
   if ( compute_smoothing_matrix == false ) {
+//     cout << beta_.rows() << " " << Fz_.rows() << " " << Fz_.cols() << endl;
+//     cout << beta_ << endl;
+//     cout << Fz_ << endl;
     beta_ = solver.solveWithGuess ( Fz_, beta_ );
   } else {
 
@@ -339,23 +341,6 @@ LSBA::ComputeParametersW ()
   }
   Fw_.finalize();
 
-//   Fw_ = F_;
-
-  /*  cout << Fw_.nonZeros() << " " << Fw_.rows() << " " << Fw_.cols() << endl;
-
-    SparseMatrix<lsba_real, RowMajor>::InnerIterator it1 ( Fw_, 0 );
-    for ( size_t i = 0; i < 16; ++i, ++it1 )
-      cout << it1.value() << " ";
-    cout << endl;
-
-    SparseVector<lsba_real> f;
-    PointF ( ( *u_ ) [0], ( *v_ ) [0], f );
-    cout << f << endl;
-    SparseMatrix<lsba_real, RowMajor>::InnerIterator it2 ( f, 0 );
-    for ( size_t i = 0; i < 16; ++i, ++it1 )
-      cout << it2.value() << " ";
-    cout << endl; */
-
   zzw_ = zz_;
   for ( size_t i = 0; i < zzw_.rows (); ++i )
     zzw_[i] *= sqrt ( ( *w_ ) [i] );
@@ -364,10 +349,6 @@ LSBA::ComputeParametersW ()
   FF_.makeCompressed();
 
   Fz_ = Fw_.transpose () * zzw_;
-//   end = std::chrono::system_clock::now();
-//   std::chrono::duration<double> elapsed_seconds = end-start;
-//
-//   cout << "Compute W time: " << elapsed_seconds.count() << endl;
 }
 
 void LSBA::ComputeLambda()
@@ -576,6 +557,7 @@ LSBA::Predict ( double u,
                 size_t max_iterations
               ) const
 {
+  mean = variance = 0.;
 //   SparseVector<lsba_real> f;
   Matrix<lsba_real, Dynamic, 1> f;
 
@@ -589,7 +571,6 @@ LSBA::Predict ( double u,
   if ( max_iterations > 0 )
     solver.setMaxIterations ( max_iterations );
 
-
   if ( lambda_ == 0. ) {
     solver.compute ( FF_ );
     ff = solver.solve ( f );
@@ -600,6 +581,7 @@ LSBA::Predict ( double u,
     Matrix<lsba_real, Dynamic, 1> temp = FF_ * ff;
     variance = sigma2_ * ff.dot ( temp );
   }
+
 }
 
 /** Predict the mean and the variance in the location (u,v)
@@ -951,6 +933,8 @@ LSBA::PointF ( double u,
     for ( size_t jj = 0; jj < 4; ++jj ) {
       f ( ( i + 1 ) * n2_ + j + 1 + ii * n2_ + jj ) = w_kl[ii][jj];
     }
+    
+//     return true;
 
 }
 
@@ -967,13 +951,9 @@ LSBA::ComputeVariance ()
     }
   } else {
     for ( size_t i = 0; i < n; ++i ) {
-//       sigma2_ += pow ( ( *z_ ) [i] - Predict ( ( *u_ ) [i], ( *v_ ) [i] ), 2 ) * ( *w_ ) [i];
-      sigma2_ += pow ( ( *z_ ) [i] - Predict ( ( *u_ ) [i], ( *v_ ) [i] ), 2 );
-//       cout << ( *u_ ) [i] << " " << ( *v_ ) [i] << " " << ( *z_ ) [i] << " " << Predict ( ( *u_ ) [i], ( *v_ ) [i] ) << endl;
+      sigma2_ += pow ( ( *z_ ) [i] - Predict ( ( *u_ ) [i], ( *v_ ) [i] ), 2 ) * ( *w_ ) [i];
     }
   }
-
-//   cout << sigma2_ << endl;
 
   if ( lambda_ == 0. ) {
     sigma2_ /= ( n - F_.cols () );
@@ -1005,14 +985,13 @@ LSBA::ComputeVariance ()
       Sl_ = F_ * temp;
     }
 
-//     SparseMatrix<lsba_real, ColMajor> SS = Sl_.transpose() * Sl_;
-    if ( w_ == NULL )
-      sigma2_ /= ( n - 2 * Sl_.diagonal().sum() + Sl_.cwiseAbs2().sum() );
-    else {
-      SparseMatrix<lsba_real, ColMajor> Slt = Sl_.transpose();
-//       sigma2_ /= ( n - Sl_.diagonal().sum() );
-      sigma2_ /= ( n - 2 * Sl_.diagonal().sum() + ( Sl_.cwiseProduct ( Slt ) ).sum() );
-//       sigma2_ /= ( n - 2 * Sl_.diagonal().sum() + Sl_.cwiseAbs2().sum() );
+    double df = Sl_.diagonal().sum();
+    
+    if ( df < n ) {
+      sigma2_ /= ( n - df );
+    } else {
+      cerr << "\033[01;33mDegree of freedom to high -> call ComputeVarianceFast()\033[0m" << endl;
+      ComputeVarianceFast();
     }
   }
 }
@@ -1030,8 +1009,7 @@ LSBA::ComputeVarianceFast ()
     }
   } else {
     for ( size_t i = 0; i < n; ++i ) {
-//       sigma2_ += pow ( ( *z_ ) [i] - Predict ( ( *u_ ) [i], ( *v_ ) [i] ), 2 ) * ( *w_ ) [i];
-      sigma2_ += pow ( ( *z_ ) [i] - Predict ( ( *u_ ) [i], ( *v_ ) [i] ), 2 );
+      sigma2_ += pow ( ( *z_ ) [i] - Predict ( ( *u_ ) [i], ( *v_ ) [i] ), 2 ) * ( *w_ ) [i];
     }
   }
 

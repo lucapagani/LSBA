@@ -1,17 +1,17 @@
 //  Copyright (C) 2014 Luca Pagani
-// 
+//
 // This file is part of LSBA.
-// 
+//
 // LSBA is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // LSBA is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with LSBA.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -40,7 +40,6 @@ LSBALink::LSBALink ( boost::shared_ptr< vector<double> > u,
   v_ = v;
 
   z_res_.reset ( new vector<double> );
-  weights_.reset ( new vector<double> );
 
   ComputeResidual ();
 
@@ -73,20 +72,18 @@ LSBALink::LSBALink ( boost::shared_ptr< vector<double> > u,
   // Compute parameters
   ComputeParameters ();
 
-//   if ( lambda_fac_ > 0. ) {
-//     ComputeLambda ();
-//     lambda_ *= lambda_fac_;
-//     BuildSparseStructure();
-//     ComputeSmoothingTerm ();
-//   } else {
-//     lambda_ = 0.;
-//   }
+  if ( lambda_fac_ > 0. ) {
+    ComputeLambda ();
+    lambda_ *= lambda_fac_;
+    BuildSparseStructure();
+    ComputeSmoothingTerm ();
+  } else {
+    lambda_ = 0.;
+  }
 
-//     std::cout << S_ << std::endl;
-//   if ( compute_weights_ == true )
-  LSBA::SetWeights ( weights_ );
-  
-//   std::cout << S_ << std::endl;
+  if ( compute_weights_ == true ) {
+    LSBA::SetWeights ( weights_ );
+  }
 
 }
 
@@ -97,12 +94,13 @@ LSBALink::ComputeResidual ()
 
   double mean ( 0. ), var ( 0. );
   z_res_->resize ( u_->size () );
-  weights_->resize ( u_->size() );
 
   lsba_low_->ComputeVarianceFast();
 
   if ( compute_weights_ == true ) {
 
+    weights_.reset ( new vector<double> );
+    weights_->resize ( u_->size() );
     #pragma omp parallel for private ( mean, var )
     for ( size_t i = 0; i < u_->size (); ++i ) {
       lsba_low_->Predict ( ( *u_ ) [i], ( *v_ ) [i], mean, var, 1e2 );
@@ -116,7 +114,7 @@ LSBALink::ComputeResidual ()
     for ( size_t i = 0; i < u_->size (); ++i ) {
       mean = lsba_low_->Predict ( ( *u_ ) [i], ( *v_ ) [i] );
       ( *z_res_ ) [i] = ( *z_ ) [i] - mean;
-      ( *weights_ ) [i] = 1.;
+//       ( *weights_ ) [i] = 1.;
     }
 
   }
@@ -137,7 +135,6 @@ LSBALink::Predict ( double u,
                   ) const
 {
   double value = LSBA::Predict ( u, v ) + lsba_low_->Predict ( u, v );
-//   double value = lsba_low_->Predict ( u, v );
   return value;
 }
 
@@ -156,12 +153,62 @@ LSBALink::Predict ( double u,
                     int max_iterations
                   ) const
 {
-//   // Mean and variance of residual process
-//   LSBA::Predict ( u, v, mean, variance, max_iterations );
+
+// // // Mean and variance of residual process
+// // LSBA::Predict ( u, v, mean, variance, max_iterations );
+// // Mean and variance of low-fidelity model
+//   double mean_low, variance_low;
+//   Matrix<lsba_real, Dynamic, 1> rhs_cov;
+// // SparseVector<lsba_real> f;
+//   Matrix<lsba_real, Dynamic, 1> fh;
+//   PointF ( u, v, fh );
+//   int n1, n2;
+//   lsba_low_->get_spline_size ( n1, n2 );
+// // Compute F0 matrix
+//   SparseMatrix<lsba_real, RowMajor> F0;
+//   F0.resize ( u_->size (), n1 * n2 );
+//   F0.reserve ( u_->size () * 16 );
+// // Fill model matrix
+//   for ( size_t i = 0; i < u_->size (); ++i )
+//     AddPointF0 ( F0, i, ( *u_ ) [i], ( *v_ ) [i] );
+//   F0.makeCompressed();
+//   F0.finalize();
+// // std::cout << F0.rows() << " " << F0.cols() << " " << F_.cols() << " ";
+// // double lambda_l = lsba_low_->get_smoothing_factor ();
+//   double sigma2_low = lsba_low_->get_variance();
+//   Matrix<lsba_real, Dynamic, 1> ff;
+//   ConjugateGradient<SparseMatrix<lsba_real> > solver;
+//   if ( max_iterations > 0 )
+//     solver.setMaxIterations ( max_iterations );
+//   SparseMatrix<lsba_real, RowMajor> Fww;
+//   Fww.resize ( Fw_.rows (), Fw_.cols () );
+//   Fww.reserve ( Fw_.nonZeros() );
+//   for ( int k = 0; k < Fw_.outerSize(); ++k ) {
+//     Fww.startVec ( k );
+//     for ( SparseMatrix<lsba_real, RowMajor>::InnerIterator it ( F_, k ); it; ++it ) {
+//       Fww.insertBack ( it.row (), it.col () ) = it.value () * ( *w_ ) [it.row ()] * ( 1. + sigma2_ );
+//     }
+//   }
+//   Fww.finalize();
+//   if ( lambda_ == 0. ) {
+//     solver.compute ( FF_ );
+//   } else {
+//     solver.compute ( S_ );
+//   }
+//   ff = solver.solve ( fh );
+//   Matrix<lsba_real, Dynamic, Dynamic> F0f = Matrix<lsba_real, Dynamic, Dynamic> ( F0 );
+//   Matrix<lsba_real, Dynamic, 1> f0 = F0f.transpose() * ( F_ * ff );
+//   lsba_low_->Predict ( u, v, mean_low, variance_low, f0, rhs_cov, max_iterations );
+//   Matrix<lsba_real, Dynamic, 1> temp = F_.transpose() * ( Fww * ff );
+//   variance = ff.dot ( temp ) + variance_low;
+//   mean = fh.dot ( beta_ ) + mean_low;
+// // mean = mean_low;
+//   variance += 2 * sigma2_low * f0.dot ( rhs_cov );
+
+  mean = variance = 0.;
 
   // Mean and variance of low-fidelity model
   double mean_low, variance_low;
-  Matrix<lsba_real, Dynamic, 1> rhs_cov;
   //   SparseVector<lsba_real> f;
   Matrix<lsba_real, Dynamic, 1> fh;
   PointF ( u, v, fh );
@@ -180,8 +227,6 @@ LSBALink::Predict ( double u,
   F0.makeCompressed();
   F0.finalize();
 
-//   std::cout << F0.rows() << " " << F0.cols() << " " <<  F_.cols() << " ";
-//   double lambda_l = lsba_low_->get_smoothing_factor ();
   double sigma2_low = lsba_low_->get_variance();
 
   Matrix<lsba_real, Dynamic, 1> ff;
@@ -189,18 +234,6 @@ LSBALink::Predict ( double u,
 
   if ( max_iterations > 0 )
     solver.setMaxIterations ( max_iterations );
-
-  SparseMatrix<lsba_real, RowMajor> Fww;
-  Fww.resize ( Fw_.rows (), Fw_.cols () );
-  Fww.reserve ( Fw_.nonZeros() );
-
-  for ( int k = 0; k < Fw_.outerSize(); ++k ) {
-    Fww.startVec ( k );
-    for ( SparseMatrix<lsba_real, RowMajor>::InnerIterator it ( F_, k ); it; ++it ) {
-      Fww.insertBack ( it.row (), it.col () ) = it.value () * ( *w_ ) [it.row ()] * ( 1. + sigma2_ );
-    }
-  }
-  Fww.finalize();
 
   if ( lambda_ == 0. ) {
     solver.compute ( FF_ );
@@ -210,85 +243,66 @@ LSBALink::Predict ( double u,
 
   ff = solver.solve ( fh );
 
-  Matrix<lsba_real, Dynamic, Dynamic> F0f = Matrix<lsba_real, Dynamic, Dynamic> ( F0 );
+  if ( w_ == NULL && var_low_ == NULL ) {
+    lsba_low_->Predict ( u, v, mean_low, variance_low );
+    LSBA::Predict ( u, v, mean, variance );
 
-  Matrix<lsba_real, Dynamic, 1> f0 = F0f.transpose() * ( F_ * ff );
+    mean += mean_low;
+    variance += variance_low;
 
-  lsba_low_->Predict ( u, v, mean_low, variance_low, f0, rhs_cov, max_iterations );
+  } else if ( w_ == NULL && var_low_ != NULL ) {
+    Matrix<lsba_real, Dynamic, 1> rhs_cov;
 
-  Matrix<lsba_real, Dynamic, 1> temp = F_.transpose() * ( Fww * ff );
-  variance = ff.dot ( temp ) + variance_low;
+    if ( lambda_ == 0. ) {
+      solver.compute ( FF_ );
+      ff = solver.solve ( fh );
+    } else {
+      solver.compute ( S_ );
+      ff = solver.solve ( fh );
+    }
+    ff = F_ * ff ;
 
-  mean = fh.dot ( beta_ ) + mean_low;
-//   mean = mean_low;
+    for ( size_t i = 0; i < ff.rows(); ++i )
+      variance += ff ( i ) * ff ( i ) * ( ( *var_low_ ) [i] + sigma2_ );
 
-  variance += 2 * sigma2_low * f0.dot ( rhs_cov );
+    Matrix<lsba_real, Dynamic, Dynamic> F0f = Matrix<lsba_real, Dynamic, Dynamic> ( F0 );
 
-////////////////////////////////////////////////
-//   if ( lambda_ == 0. ) {
-//     solver.compute ( FF_ );
-//     ff = solver.solve ( fh );
-//     variance = sigma2_ *  fh.dot ( ff ) + variance_low;
-//
-//     if ( w_ == NULL ) {
-//       rhs = FF_ * ( F0 * rhs_cov );
-//     } else {
-//       SparseMatrix<lsba_real, RowMajor> Fww;
-//       Fww.resize ( Fw_.rows (), Fw_.cols () );
-//       Fww.reserve ( Fw_.nonZeros() );
-//
-//       for ( int k = 0; k < Fw_.outerSize(); ++k ) {
-//         Fww.startVec ( k );
-//         for ( SparseMatrix<lsba_real, RowMajor>::InnerIterator it ( Fw_, k ); it; ++it ) {
-//           Fww.insertBack ( it.row (), it.col () ) = it.value () * sqrt ( ( *w_ ) [it.row ()] );
-//         }
-//       }
-//       Fww.finalize();
-//
-//       rhs = FF_ * ( Fww.transpose() * ( F0 * rhs_cov ) );
-//
-//     }
-//
-//     ff = solver.solve ( rhs );
-//
-//     std::cout << variance << " " << sigma2_low << " " << 2 * sigma2_low * fh.dot ( ff ) << std::endl;
-//
-//     variance -= 2 * sigma2_low * fh.dot ( ff );
-//   } else {
-//     solver.compute ( S_ );
-//     ff = solver.solve ( fh );
-//     Matrix<lsba_real, Dynamic, 1> temp = FF_ * ff;
-//     variance = sigma2_ * ff.dot ( temp ) + variance_low;
-//
-//     if ( w_ == NULL ) {
-//       rhs = FF_ * ( F0 * rhs_cov );
-//     } else {
-//       SparseMatrix<lsba_real, RowMajor> Fww;
-//       Fww.resize ( Fw_.rows (), Fw_.cols () );
-//       Fww.reserve ( Fw_.nonZeros() );
-//
-//       for ( int k = 0; k < Fw_.outerSize(); ++k ) {
-//         Fww.startVec ( k );
-//         for ( SparseMatrix<lsba_real, RowMajor>::InnerIterator it ( Fw_, k ); it; ++it ) {
-//           Fww.insertBack ( it.row (), it.col () ) = it.value () * sqrt ( ( *w_ ) [it.row ()] );
-//         }
-//       }
-//       Fww.finalize();
-//
-//       rhs = FF_ * ( Fww.transpose() * ( F0 * rhs_cov ) );
-//
-//     }
-//
-// //     std::cout << FF_.nonZeros() << " " << F0.nonZeros() << " " << Fw_.nonZeros() << std::endl;
-// //     std::cout << rhs_cov << std::endl;
-//
-//     ff = solver.solve ( rhs );
-//
-//     std::cout << sigma2_low << " " << 2 * sigma2_low * fh.dot ( ff ) << std::endl;
-//
-// //     variance -= 2 * sigma2_low * fh.dot ( ff );
-//
-//   }
+    Matrix<lsba_real, Dynamic, 1> f0 = F0f.transpose() * ( F_ * ff );
+
+    lsba_low_->Predict ( u, v, mean_low, variance_low, f0, rhs_cov, max_iterations );
+
+    variance += variance_low + 2 * sigma2_low * f0.dot ( rhs_cov );
+
+    mean = fh.dot ( beta_ ) + mean_low;
+  } else {
+    Matrix<lsba_real, Dynamic, 1> rhs_cov;
+    SparseMatrix<lsba_real, RowMajor> Fww;
+    Fww.resize ( Fw_.rows (), Fw_.cols () );
+    Fww.reserve ( Fw_.nonZeros() );
+
+    for ( int k = 0; k < Fw_.outerSize(); ++k ) {
+      Fww.startVec ( k );
+      for ( SparseMatrix<lsba_real, RowMajor>::InnerIterator it ( F_, k ); it; ++it ) {
+        Fww.insertBack ( it.row (), it.col () ) = it.value () * ( 1. + sigma2_ ) * ( *w_ ) [it.row ()];
+      }
+    }
+    Fww.finalize();
+
+    Matrix<lsba_real, Dynamic, Dynamic> F0f = Matrix<lsba_real, Dynamic, Dynamic> ( F0 );
+
+    Matrix<lsba_real, Dynamic, 1> f0 = F0f.transpose() * ( F_ * ff );
+
+    lsba_low_->Predict ( u, v, mean_low, variance_low, f0, rhs_cov, max_iterations );
+
+    Matrix<lsba_real, Dynamic, 1> temp = F_.transpose() * ( Fww * ff );
+    variance = ff.dot ( temp ) + variance_low;
+
+    variance += 2 * sigma2_low * f0.dot ( rhs_cov );
+
+    mean = fh.dot ( beta_ ) + mean_low;
+    
+//     std::cout << mean << " " << variance << std::endl;
+  }
 }
 
 /** Compute the mean variance in the uv domain [u_min, u_max] x [v_min, v_max]
@@ -544,11 +558,19 @@ LSBALink::AddPointF0 ( SparseMatrix<lsba_real, RowMajor>& F,
   UCBspl::WKL ( s, t, w_kl ); // substituted by Odd Andersen, 16 dec. 2003
 
   // Fill model matrix
-  F.startVec ( k );
-  for ( size_t ii = 0; ii < 4; ++ii )
-    for ( size_t jj = 0; jj < 4; ++jj ) {
-      F.insertBack ( k, ( i + 1 ) * n2 + j + 1 + ii * n2 + jj ) = w_kl[ii][jj] * ( *w_ ) [k];
-    }
-
+  if ( w_ == NULL ) {
+    // Fill model matrix
+    F.startVec ( k );
+    for ( size_t ii = 0; ii < 4; ++ii )
+      for ( size_t jj = 0; jj < 4; ++jj ) {
+        F.insertBack ( k, ( i + 1 ) * n2 + j + 1 + ii * n2 + jj ) = w_kl[ii][jj];
+      }
+  } else {
+    F.startVec ( k );
+    for ( size_t ii = 0; ii < 4; ++ii )
+      for ( size_t jj = 0; jj < 4; ++jj ) {
+        F.insertBack ( k, ( i + 1 ) * n2 + j + 1 + ii * n2 + jj ) = w_kl[ii][jj] * ( *w_ ) [k];
+      }
+  }
   return true;
 }

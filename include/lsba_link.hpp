@@ -163,6 +163,19 @@ public:
                   size_t max_iterations = 0
                 ) const;          
           
+  /** Set the variance of the low fidelity points
+   *
+   * @param var_low variace of the low fidelity points
+   */
+  void
+  set_variance_low ( boost::shared_ptr< vector<double> > var_low ) {
+    if ( var_low->size() != z_->size() ) {
+      std::cerr << "The length of the vector must be equal to the length of the points." << std::endl;
+      exit ( EXIT_FAILURE );
+    }
+    var_low_ = var_low;
+  };
+                  
 //   /*! Convert from UCBspl::SplineSurface to Go::SplineSurface
 //    *
 //    */

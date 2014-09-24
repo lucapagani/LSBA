@@ -416,7 +416,7 @@ protected:
    * @param u: value of the u coordinate of the point
    * @param v: value of the v coordinate of the point
    */
-  bool
+  void
   AddPointF ( int k,
               double u,
               double v
