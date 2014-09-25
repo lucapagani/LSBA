@@ -40,19 +40,6 @@ public:
   //! Default constructor
   LSBALink () = default;
 
-//   /** Constructor with dimension 1
-//    *
-//    * @param u: vector of u values
-//    * @param v: vector of v values
-//    * @param z: vector of z values
-//    * @param surface_low: surface of the low fidelity model
-//    */
-//   LSBALink ( boost::shared_ptr< vector<double> > u,
-//              boost::shared_ptr< vector<double> > v,
-//              boost::shared_ptr< vector<double> > z,
-//              boost::shared_ptr<Go::SplineSurface> surface_low
-//            );
-
   /*! Constructor with dimension 1
    *
    * @param u: vector of u values
@@ -72,20 +59,31 @@ public:
              bool compute_weights = true
            );
 
-//   /*! Constructor with dimension 3
-//    *
-//    */
-//   MBALink ( boost::shared_ptr< vector<double> > u,
-//             boost::shared_ptr< vector<double> > v,
-//             boost::shared_ptr< vector<double> > x,
-//             boost::shared_ptr< vector<double> > y,
-//             boost::shared_ptr< vector<double> > z,
-//             boost::shared_ptr<Go::SplineSurface> surface_low
-//           );
-
   //! Desctructor
   ~LSBALink () {};
 
+  /** Set the domain over which the surface is to be defined.
+    * The default is the xy-range of the scattered data.
+    * If used, this must be done before creating the surface.
+    *
+    * @param umin: minimum value of the u-coordinate
+    * @param vmin: minimum value of the v-coordinate
+    * @param umax: maximum value of the u-coordinate
+    * @param vmax: maximum value of the v-coordinate
+    *
+    * \note This function can only be used to expand the domain beyond the uv-range
+    *       of the scattered data. It is the users responsibility to check that
+    *       no scattered data falls outside the domain.
+    *       (use std::min_element and std::max_element to find range of data
+    *       for std::vector)
+    */
+  void
+  SetDomain ( double umin,
+              double vmin,
+              double umax,
+              double vmax
+            );  
+  
 //   /** Set the weights for weithed least square
 //    * @param weights: vector of weights
 //    */
@@ -226,7 +224,7 @@ private:
    * @param u: value of the u coordinate of the point
    * @param v: value of the v coordinate of the point
    */
-  bool
+  void
   AddPointF0 ( SparseMatrix<lsba_real, RowMajor>& F,
                int k,
                double u,

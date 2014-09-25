@@ -1,13 +1,3 @@
-#ifndef LSBA_H__
-#define LSBA_H__
-
-#include <MatSparse.h>
-#include <SmoothMatrix.h>
-#include <GenMatrix.h>
-#include <UCBtypedef.h>
-#include <UCBsplines.h>
-
-#include <eigen3/Eigen/Dense>
 //  Copyright (C) 2014 Luca Pagani
 // 
 // This file is part of LSBA.
@@ -25,6 +15,16 @@
 // You should have received a copy of the GNU General Public License
 // along with LSBA.  If not, see <http://www.gnu.org/licenses/>.
 
+#ifndef LSBA_H__
+#define LSBA_H__
+
+#include <MatSparse.h>
+#include <SmoothMatrix.h>
+#include <GenMatrix.h>
+#include <UCBtypedef.h>
+#include <UCBsplines.h>
+
+#include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Sparse>
 #include <map>
 #include <boost/shared_ptr.hpp>
@@ -461,12 +461,12 @@ protected:
    *
    * @param u: value of the u coordinate
    * @param v: value of the v coordinate
-   * @param f: vector of spline function in location (u,v)
+   * 
+   * @return f: vector of spline function in location (u,v)
    */
-  void
+  Matrix<lsba_real, Dynamic, 1>
   PointF ( double u,
-           double v,
-           Matrix<lsba_real, Dynamic, 1>& f
+           double v
          ) const;
 
   void
