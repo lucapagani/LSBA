@@ -266,6 +266,15 @@ public:
                   size_t max_iterations = 0
                 ) const;
 
+  /** Set the variance of the model
+   *
+   * @param value of the estimated variance
+   */
+  void
+  set_variance ( double sigma2 ) {
+    sigma2_ = sigma2;
+  };                
+                
   /** Return the variance of the model
    *
    * @return value of the estimated variance

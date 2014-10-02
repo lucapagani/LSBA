@@ -173,7 +173,16 @@ public:
     }
     var_low_ = var_low;
   };
-                  
+
+  /** Set the variance of the model
+   *
+   * @param value of the estimated variance
+   */
+  void
+  set_variance ( double sigma2 ) {
+    sigma2_ = sigma2;
+  };   
+  
 //   /*! Convert from UCBspl::SplineSurface to Go::SplineSurface
 //    *
 //    */
