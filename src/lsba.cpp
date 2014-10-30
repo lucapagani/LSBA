@@ -136,7 +136,7 @@ void LSBA::CalculateDomain()
     domain_[3] = *std::max_element ( v_->begin(), v_->end() );
 }
 
-void LSBA::SetDomain ( double umin,
+void LSBA::set_domain ( double umin,
                        double vmin,
                        double umax,
                        double vmax
@@ -171,7 +171,7 @@ void LSBA::SetDomain ( double umin,
     }
 }
 
-void LSBA::GetDomain ( double& umin,
+void LSBA::get_domain ( double& umin,
                        double& vmin,
                        double& umax,
                        double& vmax
@@ -510,7 +510,7 @@ LSBA::BuildSparseStructure()
 }
 
 void
-LSBA::SetWeights ( boost::shared_ptr<std::vector<double> > weights )
+LSBA::set_weights ( boost::shared_ptr<std::vector<double> > weights )
 {
     if ( weights->size() != u_->size() ) {
         std::cerr << "Weights size must be equal to points size" << std::endl;
@@ -532,7 +532,7 @@ LSBA::SetWeights ( boost::shared_ptr<std::vector<double> > weights )
 }
 
 void
-LSBA::SetSmoothingFactor ( double smoothingFac )
+LSBA::set_smoothing_factor ( double smoothingFac )
 {
     if ( smoothingFac < 0. ) {
         cerr << "Smoothing factor must be positive or null" << endl;

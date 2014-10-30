@@ -82,13 +82,13 @@ LSBALink::LSBALink ( boost::shared_ptr< vector<double> > u,
   }
 
   if ( compute_weights_ == true ) {
-    LSBA::SetWeights ( weights_ );
+    LSBA::set_weights ( weights_ );
   }
 
 }
 
 void
-LSBALink::SetDomain ( double umin,
+LSBALink::set_domain ( double umin,
                       double vmin,
                       double umax,
                       double vmax
@@ -123,7 +123,7 @@ LSBALink::SetDomain ( double umin,
   }
 
   if ( compute_weights_ == true ) {
-    LSBA::SetWeights ( weights_ );
+    LSBA::set_weights ( weights_ );
   }
 }
 
@@ -642,7 +642,7 @@ LSBALink::AddPointF0 ( SparseMatrix<lsba_real, RowMajor>& F,
 
   double domain[4];
 
-  lsba_low_->GetDomain ( domain[0], domain[1], domain[2], domain[3] );
+  lsba_low_->get_domain ( domain[0], domain[1], domain[2], domain[3] );
 
   // Map to the half open domain Omega = [0,m) x [0,n)
   // The mapped uc and vc must be (strictly) less than m and n respectively
