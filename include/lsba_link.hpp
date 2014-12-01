@@ -18,16 +18,6 @@
 #ifndef LSBA_LINK__
 #define LSBA_LINK__
 
-#include <vector>
-
-#include <MBA.h>
-#include <UCButils.h>
-#include <PointAccessUtils.h>
-#include <GoTools/geometry/SplineSurface.h>
-#include <GoTools/geometry/SplineInterpolator.h>
-#include <GoTools/geometry/GeometryTools.h>
-
-// #include "util_mba_link.hpp"
 #include "lsba.hpp"
 
 using std::vector;
@@ -37,208 +27,195 @@ class LSBALink: public LSBA {
 
 public:
 
-    //! Default constructor
-    LSBALink () = default;
+  //! Default constructor
+  LSBALink () = default;
 
-    /*! Constructor with dimension 1
-     *
-     * @param u: vector of u values
-     * @param v: vector of v values
-     * @param z: vector of z values
-     * @param phi: spline coefficients
-     * @param smoothing_fac: Smoothing factor; a weight that determines the smoothness of the surface
-     * @param lsba_low: lsba object of the low fidelity model
-     * @param compute_weights: true if the weights must be computed as the inverse of the variance of prediction
-     */
-    LSBALink ( boost::shared_ptr< vector<double> > u,
-               boost::shared_ptr< vector<double> > v,
-               boost::shared_ptr< vector<double> > z,
-               boost::shared_ptr<GenMatrix<lsba_real> > phi, // solution vector
-               boost::shared_ptr<LSBA> lsba_low,
-               double smoothing_fac = 0.0,
-               bool compute_weights = true
-             );
+  /*! Constructor with dimension 1
+   *
+   * @param u: vector of u values
+   * @param v: vector of v values
+   * @param z: vector of z values
+   * @param phi: spline coefficients
+   * @param smoothing_fac: Smoothing factor; a weight that determines the smoothness of the surface
+   * @param lsba_low: lsba object of the low fidelity model
+   * @param compute_weights: true if the weights must be computed as the inverse of the variance of prediction
+   * @param build_structure: true if the matrix F and the system terms must be computed
+   */
+  LSBALink ( boost::shared_ptr< vector<double> > u,
+             boost::shared_ptr< vector<double> > v,
+             boost::shared_ptr< vector<double> > z,
+             boost::shared_ptr<GenMatrix<lsba_real> > phi, // solution vector
+             boost::shared_ptr<LSBA> lsba_low,
+             double smoothing_fac = 0.0,
+             bool compute_weights = true,
+             bool build_structure = true
+           );
 
-    //! Desctructor
-    ~LSBALink () {};
+  //! Desctructor
+  ~LSBALink () {};
 
-    /** Set the domain over which the surface is to be defined.
-      * The default is the xy-range of the scattered data.
-      * If used, this must be done before creating the surface.
-      *
-      * @param umin: minimum value of the u-coordinate
-      * @param vmin: minimum value of the v-coordinate
-      * @param umax: maximum value of the u-coordinate
-      * @param vmax: maximum value of the v-coordinate
-      *
-      * \note This function can only be used to expand the domain beyond the uv-range
-      *       of the scattered data. It is the users responsibility to check that
-      *       no scattered data falls outside the domain.
-      *       (use std::min_element and std::max_element to find range of data
-      *       for std::vector)
-      */
-    void
-    set_domain ( double umin,
-                 double vmin,
-                 double umax,
-                 double vmax
-               );
+  /** Build the matrix F and the system terms
+   */
+  void
+  BuildStructure () {
+   LSBA::BuildSparseStructure (); 
+  };
+  
+  /** Set the domain over which the surface is to be defined.
+    * The default is the xy-range of the scattered data.
+    * If used, this must be done before creating the surface.
+    *
+    * @param umin: minimum value of the u-coordinate
+    * @param vmin: minimum value of the v-coordinate
+    * @param umax: maximum value of the u-coordinate
+    * @param vmax: maximum value of the v-coordinate
+    * @param build_structure: true if the matrix F and the system terms must be computed
+    *
+    * \note This function can only be used to expand the domain beyond the uv-range
+    *       of the scattered data. It is the users responsibility to check that
+    *       no scattered data falls outside the domain.
+    *       (use std::min_element and std::max_element to find range of data
+    *       for std::vector)
+    */
+  void
+  set_domain ( double umin,
+               double vmin,
+               double umax,
+               double vmax,
+               bool build_structure = true
+             )
+  {
+    LSBA::set_domain ( umin, vmin, umax, vmax, build_structure );
+  };
 
-//   /** Set the weights for weithed least square
-//    * @param weights: vector of weights
-//    */
-//   void
-//   SetWeights ( boost::shared_ptr<std::vector<double> > weights );
-//
-//   /** Compute the spline coefficients with the Conjugate Gradient method
-//    * @param no_iterations: maximum number of iterations
-//    * @param compute_smoothing_matrix: if the smoothing matrix must be computed; if true the algorithom can bacome slow
-//    */
-//   void
-//   Compute ( int no_iterations,
-//             bool compute_smoothing_matrix = false
-//           );
-//
-//   /** Compute the spline coefficients with the direct sparse cholesky factorization
-//    *
-//    * @param compute_smoothing_matrix: if the smoothing matrix must be computed; if true the algorithom can bacome slow
-//    */
-//   void
-//   ComputeDirect ( bool compute_smoothin_matrix = false );
+  /** Prediction in the location (u,v)
+   *
+   * @param u: value of the u coordinate of the point
+   * @param v: value of the v coordinate of the point
+   *
+   * @return value of the predicted point
+   */
+  double
+  Predict ( double u,
+            double v
+          ) const;
 
-    /** Prediction in the location (u,v)
-     *
-     * @param u: value of the u coordinate of the point
-     * @param v: value of the v coordinate of the point
-     *
-     * @return value of the predicted point
-     */
-    double
-    Predict ( double u,
-              double v
-            ) const;
+  /** Predict the mean and the variance in the location (u,v)
+   *
+   * @param u: value of the u coordinate of the point
+   * @param v: value of the v coordinate of the point
+   * @param mean: value of the predicted mean
+   * @param variance: value of the variance of the predicted point in the location (u,v)
+   */
+  void
+  Predict ( double u,
+            double v,
+            double& mean,
+            double& variance,
+            int max_iterations = 0
+          ) const;
 
-    /** Predict the mean and the variance in the location (u,v)
-     *
-     * @param u: value of the u coordinate of the point
-     * @param v: value of the v coordinate of the point
-     * @param mean: value of the predicted mean
-     * @param variance: value of the variance of the predicted point in the location (u,v)
-     */
-    void
-    Predict ( double u,
-              double v,
-              double& mean,
-              double& variance,
-              int max_iterations = 0
-            ) const;
+  /** Compute the mean variance in the uv domain [u_min, u_max] x [v_min, v_max]
+   *
+   */
+  double
+  ComputeMeanVariance ( double u_min,
+                        double v_min,
+                        double u_max,
+                        double v_max,
+                        size_t max_eval = 0,
+                        double req_abs_error = 1e-4,
+                        double req_rel_error = 1e-4,
+                        size_t max_iterations = 0
+                      ) const;
 
-    /** Compute the mean variance in the uv domain [u_min, u_max] x [v_min, v_max]
-     *
-     */
-    double
-    ComputeMeanVariance ( double u_min,
-                          double v_min,
-                          double u_max,
-                          double v_max,
-                          size_t max_eval = 0,
-                          double req_abs_error = 1e-4,
-                          double req_rel_error = 1e-4,
-                          size_t max_iterations = 0
-                        ) const;
+  /** Compute the mean standard deviation in the uv domain [u_min, u_max] x [v_min, v_max]
+   *
+   */
+  double
+  ComputeMeanSd ( double u_min,
+                  double v_min,
+                  double u_max,
+                  double v_max,
+                  size_t max_eval = 0,
+                  double req_abs_error = 1e-4,
+                  double req_rel_error = 1e-4,
+                  size_t max_iterations = 0
+                ) const;
 
-    /** Compute the mean standard deviation in the uv domain [u_min, u_max] x [v_min, v_max]
-     *
-     */
-    double
-    ComputeMeanSd ( double u_min,
-                    double v_min,
-                    double u_max,
-                    double v_max,
-                    size_t max_eval = 0,
-                    double req_abs_error = 1e-4,
-                    double req_rel_error = 1e-4,
-                    size_t max_iterations = 0
-                  ) const;
+  /** Set the variance of the low fidelity points
+   *
+   * @param var_low variace of the low fidelity points
+   */
+  void
+  set_variance_low ( boost::shared_ptr< vector<double> > var_low ) {
+    if ( var_low->size() != z_->size() ) {
+      std::cerr << "The length of the vector must be equal to the length of the points." << std::endl;
+      exit ( EXIT_FAILURE );
+    }
+    var_low_ = var_low;
+  };
 
-    /** Set the variance of the low fidelity points
-     *
-     * @param var_low variace of the low fidelity points
-     */
-    void
-    set_variance_low ( boost::shared_ptr< vector<double> > var_low ) {
-        if ( var_low->size() != z_->size() ) {
-            std::cerr << "The length of the vector must be equal to the length of the points." << std::endl;
-            exit ( EXIT_FAILURE );
-        }
-        var_low_ = var_low;
-    };
-
-    /** Set the variance of the model
-     *
-     * @param value of the estimated variance
-     */
-    void
-    set_variance ( double sigma2 ) {
-        sigma2_ = sigma2;
-    };
-
-//   /*! Convert from UCBspl::SplineSurface to Go::SplineSurface
-//    *
-//    */
-//   void Convert ();
+  /** Set the variance of the model
+   *
+   * @param value of the estimated variance
+   */
+  void
+  set_variance ( double sigma2 ) {
+    sigma2_ = sigma2;
+  };
 
 private:
 
-    //! Compute residual between Hi-Fi points and Lo-Fi prediction
-    void
-    ComputeResidual ();
+  //! Compute residual between Hi-Fi points and Lo-Fi prediction
+  void
+  ComputeResidual ();
 
-    //! Vector of z points
-    boost::shared_ptr< vector<double> > z_;
-    //! Vector of z residuals points
-    boost::shared_ptr< vector<double> > z_res_;
-    //! Vector of z residuals points
-    boost::shared_ptr< vector<double> > weights_;
+  //! Vector of z points
+  boost::shared_ptr< vector<double> > z_;
+  //! Vector of z residuals points
+  boost::shared_ptr< vector<double> > z_res_;
+  //! Vector of z residuals points
+  boost::shared_ptr< vector<double> > weights_;
 
-    //! Low fidelity lsba object
-    boost::shared_ptr<LSBA> lsba_low_;
+  //! Low fidelity lsba object
+  boost::shared_ptr<LSBA> lsba_low_;
 
-    //! true if the weights must be computed as the inverse of the variance of prediction
-    bool compute_weights_;
+  //! true if the weights must be computed as the inverse of the variance of prediction
+  bool compute_weights_;
 
-    //! Variance of the low fidelity points
-    boost::shared_ptr< vector<double> > var_low_;
+  //! Variance of the low fidelity points
+  boost::shared_ptr< vector<double> > var_low_;
 
-    static int
-    PredictVariance ( unsigned n_dim,
-                      const double* uv,
-                      void* util,
-                      unsigned f_dim,
-                      double* f_val
-                    );
+  static int
+  PredictVariance ( unsigned n_dim,
+                    const double* uv,
+                    void* util,
+                    unsigned f_dim,
+                    double* f_val
+                  );
 
-    static int
-    PredictSd ( unsigned n_dim,
-                const double* uv,
-                void* util,
-                unsigned f_dim,
-                double* f_val
-              );
+  static int
+  PredictSd ( unsigned n_dim,
+              const double* uv,
+              void* util,
+              unsigned f_dim,
+              double* f_val
+            );
 
-    /** Add a point to the model matrix (F1)
-     *
-     * @param F: model matrix
-     * @param k: number of the row of the model matix
-     * @param u: value of the u coordinate of the point
-     * @param v: value of the v coordinate of the point
-     */
-    void
-    AddPointF0 ( SparseMatrix<lsba_real, RowMajor>& F,
-                 int k,
-                 double u,
-                 double v
-               ) const;
+  /** Add a point to the model matrix (F1)
+   *
+   * @param F: model matrix
+   * @param k: number of the row of the model matix
+   * @param u: value of the u coordinate of the point
+   * @param v: value of the v coordinate of the point
+   */
+  void
+  AddPointF0 ( SparseMatrix<lsba_real, RowMajor>& F,
+               int k,
+               double u,
+               double v
+             ) const;
 
 };
 #endif

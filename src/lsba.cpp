@@ -32,7 +32,9 @@ LSBA::LSBA ( boost::shared_ptr<std::vector<double> > u,
              boost::shared_ptr<std::vector<double> > v,
              boost::shared_ptr<std::vector<double> > z,
              boost::shared_ptr<GenMatrix<lsba_real> > x,
-             double lambda_fac )
+             double lambda_fac,
+             bool build_structure
+           )
     : u_ ( u ), v_ ( v ), z_ ( z ), x_ ( x ), lambda_fac_ ( lambda_fac )
 {
     n1_ = x_->noX();
@@ -41,13 +43,6 @@ LSBA::LSBA ( boost::shared_ptr<std::vector<double> > u,
 
     CalculateDomain();
 
-    // Resize model matrix
-    F_.resize ( u_->size (), n1_ * n2_ );
-    F_.reserve ( u_->size () * 16 );
-    // Fill model matrix
-    for ( size_t i = 0; i < u_->size (); ++i )
-        AddPointF ( i, ( *u_ ) [i], ( *v_ ) [i] );
-    F_.finalize();
     // Resize vector of unknown
     beta_.resize ( n1_ * n2_ );
     // Resize zz_
@@ -56,17 +51,8 @@ LSBA::LSBA ( boost::shared_ptr<std::vector<double> > u,
     for ( size_t i = 0; i < z_->size(); ++i )
         zz_ ( i ) = static_cast<lsba_real> ( ( *z_ ) [i] );
 
-    // Compute parameters
-    ComputeParameters ();
-
-    if ( lambda_fac_ > 0. ) {
-        ComputeLambda ();
-        lambda_ *= lambda_fac_;
-        BuildSparseStructure();
-        ComputeSmoothingTerm ();
-    } else {
-        lambda_ = 0.;
-    }
+    if ( build_structure == true )
+        BuildStructure ();
 
 }
 
@@ -75,7 +61,8 @@ LSBA::LSBA ( boost::shared_ptr<std::vector<double> > u,
              boost::shared_ptr<std::vector<double> > z,
              boost::shared_ptr<std::vector<double> > w,
              boost::shared_ptr<GenMatrix<lsba_real> > x, // solution vector
-             double lambda_fac
+             double lambda_fac,
+             bool build_structure
            )
     : u_ ( u ), v_ ( v ), z_ ( z ), w_ ( w ), x_ ( x ), lambda_fac_ ( lambda_fac )
 {
@@ -85,23 +72,6 @@ LSBA::LSBA ( boost::shared_ptr<std::vector<double> > u,
 
     CalculateDomain();
 
-    // Resize model matrix
-    F_.resize ( u_->size (), n1_ * n2_ );
-    F_.reserve ( u_->size () * 16 );
-    // Fill model matrix
-    for ( size_t i = 0; i < u_->size (); ++i )
-        AddPointF ( i, ( *u_ ) [i], ( *v_ ) [i] );
-    F_.finalize();
-
-    //////
-//   Fw_.resize ( F_.rows (), F_.cols () );
-//   Fw_.reserve ( F_.nonZeros() );
-//
-//   for ( size_t i = 0; i < u_->size (); ++i )
-//     AddPointFw ( i, ( *u_ ) [i], ( *v_ ) [i] );
-//   Fw_.finalize();
-    //////
-
     // Resize vector of unknown
     beta_.resize ( n1_ * n2_ );
     // Resize zz_
@@ -110,8 +80,26 @@ LSBA::LSBA ( boost::shared_ptr<std::vector<double> > u,
     for ( size_t i = 0; i < z_->size(); ++i )
         zz_ ( i ) = static_cast<lsba_real> ( ( *z_ ) [i] );
 
+    if ( build_structure == true )
+        BuildStructure ();
+
+}
+
+void LSBA::BuildStructure()
+{
+    // Resize model matrix
+    F_.resize ( u_->size (), n1_ * n2_ );
+    F_.reserve ( u_->size () * 16 );
+    // Fill model matrix
+    for ( size_t i = 0; i < u_->size (); ++i )
+        AddPointF ( i, ( *u_ ) [i], ( *v_ ) [i] );
+    F_.finalize();
+
     // Compute parameters
-    ComputeParametersW ();
+    if ( w_ == NULL )
+        ComputeParameters ();
+    else
+        ComputeParametersW();
 
     if ( lambda_fac_ > 0. ) {
         ComputeLambda ();
@@ -121,7 +109,6 @@ LSBA::LSBA ( boost::shared_ptr<std::vector<double> > u,
     } else {
         lambda_ = 0.;
     }
-
 }
 
 void LSBA::CalculateDomain()
@@ -137,10 +124,11 @@ void LSBA::CalculateDomain()
 }
 
 void LSBA::set_domain ( double umin,
-                       double vmin,
-                       double umax,
-                       double vmax
-                     )
+                        double vmin,
+                        double umax,
+                        double vmax,
+                        bool build_structure
+                      )
 {
     if ( domain_.size() != 4 )
         domain_.resize ( 4 );
@@ -150,32 +138,15 @@ void LSBA::set_domain ( double umin,
     domain_[2] = umax;
     domain_[3] = vmax;
 
-    // Resize model matrix
-    F_.resize ( u_->size (), n1_ * n2_ );
-    F_.reserve ( u_->size () * 16 );
-    // Fill model matrix
-    for ( size_t i = 0; i < u_->size (); ++i )
-        AddPointF ( i, ( *u_ ) [i], ( *v_ ) [i] );
-    F_.finalize();
-
-    if ( w_ != NULL )
-        ComputeParametersW ();
-
-    if ( lambda_fac_ > 0. ) {
-        ComputeLambda ();
-        lambda_ *= lambda_fac_;
-        BuildSparseStructure();
-        ComputeSmoothingTerm ();
-    } else {
-        lambda_ = 0.;
-    }
+    if ( build_structure == true )
+      BuildStructure();
 }
 
 void LSBA::get_domain ( double& umin,
-                       double& vmin,
-                       double& umax,
-                       double& vmax
-                     ) const
+                        double& vmin,
+                        double& umax,
+                        double& vmax
+                      ) const
 {
 
     umin = domain_[0];
@@ -442,15 +413,7 @@ void LSBA::ComputeSmoothingTerm ()
 
 }
 
-/** Compute the number of non zeros entries of the matrix E
- *
- * @param n1: number of spline coefficients in u direction
- * @param n2: numbre of spline coefficients in v direction
- * @param K: order of spline in u direction
- * @param L: order of spline in v direction
- *
- * @return number of non zero values
- */
+//! Compute the number of non zeros entries of the matrix E
 static int
 NoNonZeros ( int n1,
              int n2,
@@ -476,7 +439,6 @@ NoNonZeros ( int n1,
 void
 LSBA::BuildSparseStructure()
 {
-
     // Must be run after n1_ and n2_ have been set
 
     if ( n1_ < 1 || n2_ < 1 ) {
@@ -510,7 +472,9 @@ LSBA::BuildSparseStructure()
 }
 
 void
-LSBA::set_weights ( boost::shared_ptr<std::vector<double> > weights )
+LSBA::set_weights ( boost::shared_ptr<std::vector<double> > weights,
+  bool build_structure
+)
 {
     if ( weights->size() != u_->size() ) {
         std::cerr << "Weights size must be equal to points size" << std::endl;
@@ -518,17 +482,8 @@ LSBA::set_weights ( boost::shared_ptr<std::vector<double> > weights )
     }
     w_ = weights;
 
-    ComputeParametersW();
-
-    if ( lambda_fac_ > 0. ) {
-        ComputeLambda ();
-        lambda_ *= lambda_fac_;
-        BuildSparseStructure();
-        ComputeSmoothingTerm ();
-    } else {
-        lambda_ = 0.;
-    }
-
+    if ( build_structure == true )
+      BuildStructure ();
 }
 
 void

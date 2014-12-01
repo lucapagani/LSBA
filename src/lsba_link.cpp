@@ -18,22 +18,15 @@
 #include "lsba_link.hpp"
 #include <boost/make_shared.hpp>
 
-/*! Constructor with dimension 1
- *
- * @param u: vector of u values
- * @param v: vector of v values
- * @param z: vector of z values
- * @param phi: spline coefficients
- * @param smoothingFac: Smoothing factor; a weight that determines the smoothness of the surface
- * @param lsba_low: lsba object of the low fidelity model
- */
+//! Constructor with dimension 1
 LSBALink::LSBALink ( boost::shared_ptr< vector<double> > u,
                      boost::shared_ptr< vector<double> > v,
                      boost::shared_ptr< vector<double> > z,
                      boost::shared_ptr<GenMatrix<lsba_real> > phi, // solution vector
                      boost::shared_ptr<LSBA> lsba_low,
                      double smoothingFac,
-                     bool compute_weights
+                     bool compute_weights,
+                     bool build_structure
                    ) : z_ ( z ), lsba_low_ ( lsba_low ), compute_weights_ ( compute_weights )
 {
   u_ = u;
@@ -54,13 +47,6 @@ LSBALink::LSBALink ( boost::shared_ptr< vector<double> > u,
 
   CalculateDomain();
 
-  // Resize model matrix
-  F_.resize ( u_->size (), n1_ * n2_ );
-  F_.reserve ( u_->size () * 16 );
-  // Fill model matrix
-  for ( size_t i = 0; i < u_->size (); ++i )
-    AddPointF ( i, ( *u_ ) [i], ( *v_ ) [i] );
-  F_.finalize();
   // Resize vector of unknown
   beta_.resize ( n1_ * n2_ );
   // Resize zz_
@@ -69,63 +55,31 @@ LSBALink::LSBALink ( boost::shared_ptr< vector<double> > u,
   for ( size_t i = 0; i < z_->size(); ++i )
     zz_ ( i ) = static_cast<lsba_real> ( ( *z_res_ ) [i] );
 
-  // Compute parameters
-  ComputeParameters ();
-
-  if ( lambda_fac_ > 0. ) {
-    ComputeLambda ();
-    lambda_ *= lambda_fac_;
-    BuildSparseStructure();
-    ComputeSmoothingTerm ();
-  } else {
-    lambda_ = 0.;
-  }
-
   if ( compute_weights_ == true ) {
     LSBA::set_weights ( weights_ );
   }
 
+  if ( build_structure == true )
+    LSBA::BuildStructure();
 }
 
-void
-LSBALink::set_domain ( double umin,
-                      double vmin,
-                      double umax,
-                      double vmax
-                    )
-{
-  if ( domain_.size() != 4 )
-    domain_.resize ( 4 );
-
-  domain_[0] = umin;
-  domain_[1] = vmin;
-  domain_[2] = umax;
-  domain_[3] = vmax;
-
-  // Resize model matrix
-  F_.resize ( u_->size (), n1_ * n2_ );
-  F_.reserve ( u_->size () * 16 );
-  // Fill model matrix
-  for ( size_t i = 0; i < u_->size (); ++i )
-    AddPointF ( i, ( *u_ ) [i], ( *v_ ) [i] );
-  F_.finalize();
-
-  // Compute parameters
-  ComputeParameters ();
-
-  if ( lambda_fac_ > 0. ) {
-    ComputeLambda ();
-    lambda_ *= lambda_fac_;
-    BuildSparseStructure();
-    ComputeSmoothingTerm ();
-  } else {
-    lambda_ = 0.;
-  }
-
-  if ( compute_weights_ == true ) {
-    LSBA::set_weights ( weights_ );
-  }
-}
+// void
+// LSBALink::set_domain ( double umin,
+//                       double vmin,
+//                       double umax,
+//                       double vmax
+//                     )
+// {
+//   if ( domain_.size() != 4 )
+//     domain_.resize ( 4 );
+// 
+//   domain_[0] = umin;
+//   domain_[1] = vmin;
+//   domain_[2] = umax;
+//   domain_[3] = vmax;
+// 
+//   LSBA::BuildStructure();
+// }
 
 //! Compute residual between Hi-Fi points and Lo-Fi prediction
 void
@@ -138,7 +92,6 @@ LSBALink::ComputeResidual ()
   lsba_low_->ComputeVarianceFast();
 
   if ( compute_weights_ == true ) {
-
     weights_.reset ( new vector<double> );
     weights_->resize ( u_->size() );
     #pragma omp parallel for private ( mean, var )
@@ -147,16 +100,12 @@ LSBALink::ComputeResidual ()
       ( *z_res_ ) [i] = ( *z_ ) [i] - mean;
       ( *weights_ ) [i] = 1. / var;
     }
-
   } else {
-
     #pragma omp parallel for private ( mean, var )
     for ( size_t i = 0; i < u_->size (); ++i ) {
       mean = lsba_low_->Predict ( ( *u_ ) [i], ( *v_ ) [i] );
       ( *z_res_ ) [i] = ( *z_ ) [i] - mean;
-//       ( *weights_ ) [i] = 1.;
     }
-
   }
 
 }
