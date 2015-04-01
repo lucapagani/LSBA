@@ -169,7 +169,6 @@ int main ( int argc, char **argv )
   VecDPtr u_low ( new VecD ), v_low ( new VecD ), z_low ( new VecD );
   VecDPtr u_high ( new VecD ), v_high ( new VecD ), z_high ( new VecD );
   VecDPtr u_test ( new VecD ), v_test ( new VecD ), z_test ( new VecD );
-//   VecDPtr w ( new VecD );
 
   // Number of Lo-Fi points
   int n_low = .5e3;
@@ -215,38 +214,48 @@ int main ( int argc, char **argv )
   // Choose number of levels of MBA algorithm
   int h_low = 5, h_high = 5, h_link = 4;
 
+  // lambda of for the LSBA algorithm
+  double lambda_lo = 10.;
+  double lambda = 1.;
+  
+  // Random number generator
   std::default_random_engine generator;
-
+  
   std::clock_t start;
   double duration;
 
-  double lambda_lo = 10.;
-  double lambda = 1.;
-
-  start = std::clock();
+  // Simulate Lo-Fi data
   SimulateLo ( u_low, v_low, z_low, generator );
+ 
+  // Estimate Lo-Fi parameters
+  start = std::clock();  
   boost::shared_ptr<LSBA> lsba_low = EstimateParameters ( u_low, v_low, z_low, h_low, lambda_lo );
   duration = ( std::clock() - start ) / ( double ) CLOCKS_PER_SEC;
   cout << "Lo-Fi estimation time: " << duration << " s" << endl;
 
   lsba_low->ComputeVarianceFast();
 
-  start = std::clock();
+  // Simulate Hi-Fi data
   Simulate ( u_high, v_high, z_high, generator );
+  
+  // Estimate Hi-Fi parameters
+  start = std::clock();
   boost::shared_ptr<LSBA> lsba_hi = EstimateParameters ( u_high, v_high, z_high, h_high, lambda );
   duration = ( std::clock() - start ) / ( double ) CLOCKS_PER_SEC;
   cout << "Hi-Fi estimation time: " << duration << " s" << endl;
 
+  // Estimate link parameters
   boost::shared_ptr<LSBALink> lsba_link = EstimateParameters ( u_high, v_high, z_high, h_link, lsba_low, true, lambda, false );
   duration = ( std::clock() - start ) / ( double ) CLOCKS_PER_SEC;
   cout << "Fusion estimation time: " << duration << " s" << endl;
 
+  // Predict in the test locations
   VecDPtr pred_low ( new vector<double> ), pred_hi ( new vector<double> ), pred_link ( new vector<double> );
-
   Predict<LSBA> ( lsba_low, u_test, v_test, pred_low );
   Predict<LSBA> ( lsba_hi, u_test, v_test, pred_hi );
   Predict<LSBALink> ( lsba_link, u_test, v_test, pred_link );
 
+  // Write output files
   ofstream fout;
 
   fout.precision ( 6 );
