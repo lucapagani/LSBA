@@ -27,7 +27,7 @@ find_package(Eigen REQUIRED)
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
 # add_definitions(-DEIGEN_USE_NEW_STDVECTOR -DEIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET -DEIGEN_NO_DEBUG)
 
-include_directories(/usr/local/include/mba /usr/local/include/mba/include /usr/local/include/lsmg/include)
+include_directories(/usr/local/include/mba /usr/local/include/lsmg /usr/local/include/mba/include /usr/local/include/lsmg/include)
 
 INCLUDE_DIRECTORIES(
   ${lsba_SOURCE_DIR}/include

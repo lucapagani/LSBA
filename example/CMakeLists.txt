@@ -27,8 +27,8 @@ if (OPENMP_FOUND)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
-include_directories(/usr/local/include/mba/include /usr/local/include/lsmg/include /usr/local/include/lsba)
+include_directories(/usr/local/include/mba/include /usr/local/include/lsmg/include /usr/local/include/mba /usr/local/include/lsmg /usr/local/include/lsba)
 
 add_executable(example_lsba src/main.cpp)
 
-target_link_libraries(example_lsba liblsba.a liblsmg.a libmba.a hdf5 hdf5_cpp libcubature.a)
+target_link_libraries(example_lsba liblsba.a liblsmg.a libmba.a libcubature.a)

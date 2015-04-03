@@ -1,4 +1,4 @@
-//  Copyright (C) 2014 Luca Pagani
+//  Copyright (C) 2014-2015 Luca Pagani
 //
 // This file is part of LSBA.
 //
@@ -18,7 +18,7 @@
 #include "lsba.hpp"
 #include <stdexcept>
 
-#include <UCBsplines.h>
+#include <mba/UCBsplines.h>
 #include <algorithm>
 #ifdef _OPENMP
 #include <omp.h>

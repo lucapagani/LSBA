@@ -1,4 +1,4 @@
-//  Copyright (C) 2014 Luca Pagani
+//  Copyright (C) 2014-2015 Luca Pagani
 //
 // This file is part of LSBA.
 //
@@ -18,11 +18,11 @@
 #ifndef LSBA_H__
 #define LSBA_H__
 
-#include <MatSparse.h>
-#include <SmoothMatrix.h>
-#include <GenMatrix.h>
-#include <UCBtypedef.h>
-#include <UCBsplines.h>
+#include <lsmg/MatSparse.h>
+#include <lsmg/SmoothMatrix.h>
+#include <mba/GenMatrix.h>
+#include <mba/UCBtypedef.h>
+#include <mba/UCBsplines.h>
 
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Sparse>

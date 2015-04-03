@@ -1,4 +1,4 @@
-//  Copyright (C) 2014 Luca Pagani
+//  Copyright (C) 2014-2015 Luca Pagani
 //
 // This file is part of LSBA.
 //
