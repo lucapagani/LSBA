@@ -37,7 +37,7 @@ INCLUDE_DIRECTORIES(
 
 
 # Linked in libraries
-SET(DEPLIBS  mba)
+# SET(DEPLIBS  mba)
 
 
 # Make the lsba library
