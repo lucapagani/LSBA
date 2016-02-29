@@ -322,6 +322,15 @@ public:
     return lambda_;
   }
 
+  /** Return beta
+   *
+   * @return beta
+   */
+  Matrix<lsba_real, Dynamic, 1>
+  get_beta () const {
+    return beta_;
+  }
+
 //   boost::shared_ptr<SparseMatrix<lsba_real, ColMajor> >
 //   get_FF_matrix () {
 //     boost::shared_ptr<SparseMatrix<lsba_real, ColMajor> > FF_ptr = boost::make_shared<SparseMatrix<lsba_real, ColMajor> > ( FF_ );

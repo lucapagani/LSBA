@@ -229,7 +229,7 @@ int main ( int argc, char **argv )
     }
 
   // Choose number of levels of MBA algorithm
-  int h_low = 5, h_high = 5, h_link = 4;
+  int h_low = 5, h_high = 3, h_link = 3;
 
   // lambda of for the LSBA algorithm
   double lambda_lo = 10.;
@@ -257,7 +257,7 @@ int main ( int argc, char **argv )
   
   // Estimate Hi-Fi parameters
   start = std::clock();
-  boost::shared_ptr<LSBA> lsba_hi = EstimateParameters ( u_high, v_high, z_high, h_high, lambda );
+  boost::shared_ptr<LSBA> lsba_hi = EstimateParameters ( u_high, v_high, z_high, h_high, .01 );
   duration = ( std::clock() - start ) / ( double ) CLOCKS_PER_SEC;
   cout << "Hi-Fi estimation time: " << duration << " s" << endl;
 
