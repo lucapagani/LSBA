@@ -131,6 +131,8 @@ configure_file(LSBAConfig.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY
 configure_file(LSBAConfigVersion.cmake.in "${PROJECT_BINARY_DIR}/LSBAConfigVersion.cmake" @ONLY)
 # Install the LSBAConfig.cmake and LSBAConfigVersion.cmake
 install(FILES "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/LSBAConfig.cmake" "${PROJECT_BINARY_DIR}/LSBAConfigVersion.cmake" DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
+# Install FindPackage files
+install(FILES "${PROJECT_SOURCE_DIR}/cmake/FindCubature.cmake" "${PROJECT_SOURCE_DIR}/cmake/FindLSMG.cmake" "${PROJECT_SOURCE_DIR}/cmake/FindMBA.cmake" DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
 
 # CPack packaging
 include(InstallRequiredSystemLibraries)
