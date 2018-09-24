@@ -31,4 +31,4 @@ include_directories(/usr/local/include/mba/include /usr/local/include/lsmg/inclu
 
 add_executable(example_lsba src/main.cpp)
 
-target_link_libraries(example_lsba liblsba.a liblsmg.a libmba.a libcubature.a)
+target_link_libraries(example_lsba liblsba.a liblsmg.a libmba.a /usr/local/lib64/libcubature.so)

@@ -21,6 +21,7 @@
 #include <boost/lexical_cast.hpp>
 #include <mba/MBA.h>
 #include <ctime>
+#include <random>
 
 using namespace std;
 

@@ -23,7 +23,7 @@
 using std::vector;
 using namespace Eigen;
 
-class LSBALink: public LSBA {
+class LSBA_EXPORT LSBALink: public LSBA {
 
 public:
 
@@ -58,9 +58,9 @@ public:
    */
   void
   BuildStructure () {
-   LSBA::BuildSparseStructure (); 
+   LSBA::BuildSparseStructure ();
   };
-  
+
   /** Set the domain over which the surface is to be defined.
     * The default is the xy-range of the scattered data.
     * If used, this must be done before creating the surface.
@@ -175,7 +175,7 @@ private:
   boost::shared_ptr< vector<double> > z_;
   //! Vector of z residuals points
   boost::shared_ptr< vector<double> > z_res_;
-  //! Vector of z residuals points
+  //! Vector of weights
   boost::shared_ptr< vector<double> > weights_;
 
   //! Low fidelity lsba object

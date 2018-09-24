@@ -1,0 +1,43 @@
+# - Config file for the Surface_mesh package It defines the following variables
+#  LSBA_INCLUDE_DIRS - include directories for Surface_mesh
+#  LSBA_LIBRARIES    - libraries to link against
+#  LSBA_DEFINITIONS  - definitions of the library
+
+# Compute paths
+get_filename_component(LSBA_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+set(LSBA_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
+
+set(PACKAGE_VERSION "@LSBA_VERSION@")
+
+# Dependencies
+include ( CMakeFindDependencyMacro )
+
+# Eigen
+find_package ( Eigen3 3.3 REQUIRED NO_MODULE )
+list ( APPEND LSBA_LIBRARIES Eigen3::Eigen )
+
+# Boost
+find_package ( Boost REQUIRED )
+list ( APPEND LSBA_INCLUDE_DIRS Boost_INCLUDE_DIRS )
+list ( APPEND LSBA_LIBRARIES Boost_LIBRARIES )
+
+# MBA
+find_package ( MBA REQUIRED )
+list ( APPEND LSBA_INCLUDE_DIRS MBA_INCLUDE_DIRS )
+list ( APPEND LSBA_LIBRARIES MBA_LIBRARIES )
+
+# LSMG
+find_package ( LSMG REQUIRED )
+list ( APPEND LSBA_INCLUDE_DIRS LSMG_INCLUDE_DIRS )
+list ( APPEND LSBA_LIBRARIES LSMG_LIBRARIES )
+
+# Cubature
+find_package ( Cubature REQUIRED )
+list ( APPEND LSBA_INCLUDE_DIRS Cubature_INCLUDE_DIRS )
+list ( APPEND LSBA_LIBRARIES Cubature_LIBRARIES )
+
+# Set compiler flags
+list ( APPEND CMAKE_CXX_FLAGS "-std=c++11" )
+
+message( STATUS "LSBA version: @LSBA_VERSION@" )
+

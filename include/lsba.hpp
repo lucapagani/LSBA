@@ -18,32 +18,33 @@
 #ifndef LSBA_H__
 #define LSBA_H__
 
-#include <MatSparse.h>
-#include <SmoothMatrix.h>
-#include <GenMatrix.h>
-#include <UCBtypedef.h>
-#include <UCBsplines.h>
+#include "lsba_EXPORTS.h"
 
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/Sparse>
+#include <lsmg/MatSparse.h>
+#include <lsmg/SmoothMatrix.h>
+#include <mba/GenMatrix.h>
+#include <mba/UCBtypedef.h>
+#include <mba/UCBsplines.h>
+
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
 #include <map>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
-#include <cubature/cubature.h>
+#include <cubature.h>
 
 #define lsba_real float
 
 using namespace Eigen;
 
-class LSBA {
-
-public:
+class LSBA_EXPORT LSBA {
+ public:
 
   //! Default constructor
   LSBA () = default;
 
   /** Constructor with boost shared pointers to scattered data
-   * 
+   *
    * @param u: u-values
    * @param v: v-values
    * @param z: z-values
@@ -60,7 +61,7 @@ public:
        );
 
   /** Constructor with shared pointers to scattered data
-   * 
+   *
    * @param u: u-values
    * @param v: v-values
    * @param z: z-values
@@ -87,7 +88,7 @@ public:
   BuildStructure ();
 
   /** Set the weights for weithed least square
-   * 
+   *
    * @param weights: vector of weights
    * @param build_structure: true if the matrix F and the system terms must be computed
    */
@@ -97,7 +98,7 @@ public:
               );
 
   /** Compute the spline coefficients with the Conjugate Gradient method
-   * 
+   *
    * @param no_iterations: maximum number of iterations
    * @param compute_smoothing_matrix: if the smoothing matrix must be computed; if true the algorithom can bacome slow
    */
@@ -147,8 +148,8 @@ public:
   void
   Predict ( double u,
             double v,
-            double& mean,
-            double& variance,
+            double &mean,
+            double &variance,
             size_t max_iterations = 0
           ) const;
 
@@ -163,8 +164,8 @@ public:
   void
   Predict ( boost::shared_ptr< std::vector<double> > u,
             boost::shared_ptr< std::vector<double> > v,
-            std::vector<double>& mean,
-            std::vector<double>& variance,
+            std::vector<double> &mean,
+            std::vector<double> &variance,
             int max_iteration
           ) const;
 
@@ -180,10 +181,10 @@ public:
   void
   Predict ( double u,
             double v,
-            double& mean,
-            double& variance,
+            double &mean,
+            double &variance,
             Matrix<lsba_real, Dynamic, 1> f0,
-            Matrix<lsba_real, Dynamic, 1>& rhs_low,
+            Matrix<lsba_real, Dynamic, 1> &rhs_low,
             size_t max_iterations = 0
           ) const;
 
@@ -234,7 +235,7 @@ public:
   * @param umax: maximum value of the u-coordinate
   * @param vmax: maximum value of the v-coordinate
   * @param build_structure: true if the matrix F and the system terms must be computed
-  * 
+  *
   * \note This function can only be used to expand the domain beyond the uv-range
   *       of the scattered data. It is the users responsibility to check that
   *       no scattered data falls outside the domain.
@@ -257,10 +258,10 @@ public:
     * @param vmax: maximum value of the v-coordinate
     */
   void
-  get_domain ( double& umin,
-               double& vmin,
-               double& umax,
-               double& vmax
+  get_domain ( double &umin,
+               double &vmin,
+               double &umax,
+               double &vmax
              ) const;
 
   /** Number of unknowns in the equation system, i.e. B-spline coefficients
@@ -293,6 +294,18 @@ public:
     sigma2_ = sigma2;
   };
 
+  /** Set beta
+   *
+   * @return beta
+   */
+  void
+  set_beta ( const Matrix<lsba_real, -1, 1> &beta ) {
+    if ( beta.rows () != F_.cols () )
+      std::cerr << "beta.rows () != F_.cols ()\n";
+    else
+      beta_ = beta;
+  }
+
   /** Return the variance of the model
    *
    * @return value of the estimated variance
@@ -308,7 +321,7 @@ public:
    * @param n2 spline size in direction v
    */
   void
-  get_spline_size ( int& n1, int& n2 ) const {
+  get_spline_size ( int &n1, int &n2 ) const {
     n1 = n1_;
     n2 = n2_;
   }
@@ -331,23 +344,23 @@ public:
     return beta_;
   }
 
-//   boost::shared_ptr<SparseMatrix<lsba_real, ColMajor> >
-//   get_FF_matrix () {
-//     boost::shared_ptr<SparseMatrix<lsba_real, ColMajor> > FF_ptr = boost::make_shared<SparseMatrix<lsba_real, ColMajor> > ( FF_ );
-//
-//     return FF_ptr;
-//   }
+  //   boost::shared_ptr<SparseMatrix<lsba_real, ColMajor> >
+  //   get_FF_matrix () {
+  //     boost::shared_ptr<SparseMatrix<lsba_real, ColMajor> > FF_ptr = boost::make_shared<SparseMatrix<lsba_real, ColMajor> > ( FF_ );
+  //
+  //     return FF_ptr;
+  //   }
 
 
   /** Calculate the l2 norm of the current solution (Frobenius) */
-//   double CurrentSolutionNorm() const;
+  //   double CurrentSolutionNorm() const;
 
   /** The discrete l_2 norm of the residual ||b-Ax||_2 possibly scaled by area of grid cell */
-//   double Residual_l2 ( bool scaled=false ) const;
+  //   double Residual_l2 ( bool scaled=false ) const;
   /** The max norm of the residual (unscaled) : ||b-Ax||_inf */
-//   double Residual_linf() const;
+  //   double Residual_linf() const;
 
-protected:
+ protected:
 
   //! Vector of the u coordinates
   boost::shared_ptr<std::vector<double> > u_;
@@ -384,7 +397,7 @@ protected:
   SparseMatrix<lsba_real, ColMajor> Sl_;
 
   //! Solver for prediction variance
-//   ConjugateGradient<SparseMatrix<lsba_real> > solver_;
+  //   ConjugateGradient<SparseMatrix<lsba_real> > solver_;
 
   //! Size of spline coefficient matrix: x_.noX(), x_.noY() in A_ x_= b_
   int n1_, n2_;
@@ -458,8 +471,8 @@ protected:
               double v
             );
 
-//   void
-//   SetLimits();
+  //   void
+  //   SetLimits();
 
   //! Compute lambda as ||F'F||_F / ||E||_F
   void
@@ -467,18 +480,18 @@ protected:
 
   static int
   PredictVariance ( unsigned n_dim,
-                    const double* uv,
-                    void* util,
+                    const double *uv,
+                    void *util,
                     unsigned f_dim,
-                    double* f_val
+                    double *f_val
                   );
 
   static int
   PredictSd ( unsigned n_dim,
-              const double* uv,
-              void* util,
+              const double *uv,
+              void *util,
               unsigned f_dim,
-              double* f_val
+              double *f_val
             );
 
   /** Compute the value of the spline function in location (u,v)
@@ -490,7 +503,7 @@ protected:
   void
   PointF ( double u,
            double v,
-           SparseVector<lsba_real>& f
+           SparseVector<lsba_real> &f
          ) const;
 
   /** Compute the value of the spline function in location (u,v)
