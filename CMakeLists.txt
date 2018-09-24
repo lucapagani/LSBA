@@ -83,6 +83,7 @@ include(CMakeToolsHelpers OPTIONAL)
 
 file ( GLOB src_list "./src/*.cpp" )
 file ( GLOB include_list "./include/*.hpp" )
+list ( APPEND include_list "${CMAKE_BINARY_DIR}/lsba_EXPORTS.h" )
 
 # add_library(lsba ${LIBRARY_TYPE} ${src_list})
 add_library(lsba STATIC ${src_list})
